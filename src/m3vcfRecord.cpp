@@ -16,10 +16,20 @@ void m3vcfRecord::writeVcfRecordGenotypes(IFILE filePtr, m3vcfBlockHeader &ThisH
     ifprintf(filePtr,"GT");
     int HapCount = 0;
     for(int i=0; i<ThisHeader.getNumSamples(); i++)
-    {   
-        ifprintf(filePtr, "\t%c",tempAlleles[ThisHeader.getUniqueIndexMap(HapCount++)]);
+    {
+        if (tempAlleles[ThisHeader.getUniqueIndexMap(HapCount++)] == '1')
+            filePtr->ifwrite("\t1", 2);
+        else
+            filePtr->ifwrite("\t0", 2);
+        //ifprintf(filePtr, "\t%c",tempAlleles[ThisHeader.getUniqueIndexMap(HapCount++)]);
         if(ThisHeader.getSamplePloidy(i)==2)
-            ifprintf(filePtr, "|%c",tempAlleles[ThisHeader.getUniqueIndexMap(HapCount++)]);           
+        {
+            //ifprintf(filePtr, "|%c",tempAlleles[ThisHeader.getUniqueIndexMap(HapCount++)]);
+            if (tempAlleles[ThisHeader.getUniqueIndexMap(HapCount++)] == '1')
+                filePtr->ifwrite("|1", 2);
+            else
+                filePtr->ifwrite("|0", 2);
+        }   
     }
     ifprintf(filePtr, "\n");
 }

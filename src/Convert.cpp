@@ -8,6 +8,7 @@
 #include <iomanip>
 #include <math.h>
 #include <iostream>
+#include <limits>
 #include "VcfFileReader.h"
 #include "VcfFileWriter.h"
 #include "m3vcfHeader.h"
@@ -41,6 +42,8 @@ struct convert_args_t
     const char *output_fname, *fname;
     int argc, output_type, record_cmd_line;
     char *sample_include_list, *sample_exlcude_list;
+    int region_beg;
+    int region_end;
 
 };
 
@@ -105,9 +108,17 @@ static void Analyse(convert_args_t &args)
     int FirstBlock=0;
     while(args.myM3vcfBlock.read(args.m3vcfFileStream, args.out_hdr, args.VariantListOnly))
     {
-        for(int i=FirstBlock++==0?0:1; i<args.myM3vcfBlock.getNumMarkers(); i++)
+        if (args.region_end < args.myM3vcfBlock.getStartBasePosition())
+          break;
+
+        if (args.region_beg <= args.myM3vcfBlock.getEndBasePosition())
         {
-            args.myM3vcfBlock.writeVcfRecordGenotypes(args.vcfFileStream, i, args.VariantListOnly );
+            for(int i=FirstBlock++==0?0:1; i<args.myM3vcfBlock.getNumMarkers(); i++)
+            {
+                int pos = args.myM3vcfBlock.getM3vcfRecord(i)->getBasePosition();
+                if (pos >= args.region_beg && pos <= args.region_end)
+                    args.myM3vcfBlock.writeVcfRecordGenotypes(args.vcfFileStream, i, args.VariantListOnly );
+            }
         }
     }
        
@@ -157,6 +168,8 @@ int main_m3vcfconvert(int argc, char *argv[])
     args.sample_include_list = NULL;
     args.sample_exlcude_list = NULL;
     args.VariantListOnly=false;
+    args.region_beg = 0;
+    args.region_end = std::numeric_limits<int>::max();
     
     static struct option loptions[] =
     {
@@ -164,12 +177,16 @@ int main_m3vcfconvert(int argc, char *argv[])
         {"output",required_argument,NULL,'o'},
         {"output-type",required_argument,NULL,'O'},
         {"no-version",no_argument,NULL,8},
+        {"region-beg",required_argument,NULL,'b'},
+        {"region-end",required_argument,NULL,'e'},
         {NULL,0,NULL,0}
     };
 
-    while ((c = getopt_long(argc, argv, "o:O:G",loptions,NULL)) >= 0)
+    while ((c = getopt_long(argc, argv, "b:e:o:O:G",loptions,NULL)) >= 0)
     {
         switch (c) {
+            case 'b': args.region_beg = atoi(optarg); break;
+            case 'e': args.region_end = atoi(optarg); break;
             case 'o': args.output_fname = optarg; break;
             case 'S': args.sample_include_list = optarg; break;
             case 'G': args.VariantListOnly=true; break;
