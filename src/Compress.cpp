@@ -225,7 +225,7 @@ static void compress_Data(compress_args_t &args)
     }
 
     // If more than one variant is left compress whatever is left behind
-    if(args.Haplotypes[0].length()>1)
+    if(args.Haplotypes.size() && args.Haplotypes[0].length()>1)
         CompressAndFlushChunk(args);
 
     args.outFile.close();
