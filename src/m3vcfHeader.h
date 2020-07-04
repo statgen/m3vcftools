@@ -84,6 +84,9 @@ public:
     /// Return the header line, the line containing #chrom...
     const char* getHeaderLine();
 
+    /// Return the string length of header line, the line containing #chrom...
+    int getHeaderLineSize() const { return myHasHeaderLine ? myHeaderLines.back().size() : 0; }
+
     /// Returns the number of samples in the header line or 0 if the header
     /// line has not yet been read.
     int getNumSamples()  {return numSamples;} ;

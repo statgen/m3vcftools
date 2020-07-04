@@ -113,11 +113,11 @@ public:
         myRecords.resize(myBlockHeader.numMarkers);
     }
     
-    void writeVcfRecordGenotypes(IFILE filePtr, int index, bool siteOnly)
+    void writeVcfRecordGenotypes(IFILE filePtr, const std::vector<bool>& sample_mask, int index, bool siteOnly)
     {
         myRecords[index].write(filePtr, true);
         if(siteOnly==false)
-            myRecords[index].writeVcfRecordGenotypes(filePtr, myBlockHeader);
+            myRecords[index].writeVcfRecordGenotypes(filePtr, myBlockHeader, sample_mask);
         else
             ifprintf(filePtr, "\n");
     }

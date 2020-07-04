@@ -36,6 +36,7 @@ struct convert_args_t
     m3vcfBlock myM3vcfBlock;
     bool VariantListOnly;
 
+    std::vector<bool> sample_mask;
 
     //Common File and Argument Variables
     char **argv;
@@ -84,7 +85,32 @@ static void CopyandPrintHeader(convert_args_t &args)
     
     if(args.record_cmd_line==1)
         args.myVcfHeader.appendMetaLine(createCommandLine(args,"convert"));
-    args.myVcfHeader.addHeaderLine(args.out_hdr.getHeaderLine());
+
+    //----------------------------------------------------------------//
+    // Subset samples.
+    std::string header_line;
+    header_line.reserve(args.out_hdr.getHeaderLineSize());
+    const char* s = args.out_hdr.getHeaderLine();
+    const char*const e = s + args.out_hdr.getHeaderLineSize();
+
+    std::size_t col = 0;
+    const char* d = nullptr;
+    while ((d = std::find(s, e, '\t')) != e)
+    {
+      assert(d);
+      assert(col < args.sample_mask.size() + 9);
+      if (col < 9 || args.sample_mask[col - 9])
+        header_line.append(s, d + 1);
+      s = d + 1;
+      ++col;
+    }
+
+    assert(col < args.sample_mask.size() + 9);
+    if (col < 9 || args.sample_mask[col - 9])
+      header_line.append(s, e);
+    //----------------------------------------------------------------//
+
+    args.myVcfHeader.addHeaderLine(header_line.c_str());
     args.myVcfHeader.write(args.vcfFileStream);
 
 }
@@ -99,7 +125,22 @@ static void InitializeHaplotypeData(convert_args_t &args)
     if ( !args.m3vcfFileStream ) error("[ERROR:] Failed to open: %s\n", args.fname);
     
     args.out_hdr.read(args.m3vcfFileStream);
- 
+
+    args.sample_mask.resize(args.out_hdr.getNumSamples(), true);
+    if (args.sample_include_list)
+    {
+      std::unordered_set<std::string> include_set;
+      std::ifstream ifs(args.sample_include_list);
+      std::string sample_id;
+      while (std::getline(ifs, sample_id))
+        include_set.insert(sample_id);
+
+      for (std::size_t i = 0; i < args.out_hdr.getNumSamples(); ++i)
+      {
+        if (include_set.find(args.out_hdr.getSampleName(i)) == include_set.end())
+          args.sample_mask[i] = false;
+      }
+    }
 }
            
 
@@ -117,7 +158,7 @@ static void Analyse(convert_args_t &args)
             {
                 int pos = args.myM3vcfBlock.getM3vcfRecord(i)->getBasePosition();
                 if (pos >= args.region_beg && pos <= args.region_end)
-                    args.myM3vcfBlock.writeVcfRecordGenotypes(args.vcfFileStream, i, args.VariantListOnly );
+                    args.myM3vcfBlock.writeVcfRecordGenotypes(args.vcfFileStream, args.sample_mask, i, args.VariantListOnly );
             }
         }
     }
@@ -151,6 +192,7 @@ static void usage(convert_args_t &args)
     fprintf(stderr, "   -G, --drop-genotypes <file>            Write output to a file [standard output]\n");
     fprintf(stderr, "   -o, --output <file>            Write output to a file [standard output]\n");
     fprintf(stderr, "   -O, --output-type <z|v>        z: compressed VCF, v: uncompressed VCF [z] \n");
+    fprintf(stderr, "   -S, --samples-file             file of samples to include \n"); // (or exclude with \"^\" prefix) \n");
     fprintf(stderr, "\n");
     exit(1);
 }
@@ -179,10 +221,11 @@ int main_m3vcfconvert(int argc, char *argv[])
         {"no-version",no_argument,NULL,8},
         {"region-beg",required_argument,NULL,'b'},
         {"region-end",required_argument,NULL,'e'},
+        {"samples-file",required_argument,NULL,'S'},
         {NULL,0,NULL,0}
     };
 
-    while ((c = getopt_long(argc, argv, "b:e:o:O:G",loptions,NULL)) >= 0)
+    while ((c = getopt_long(argc, argv, "b:e:o:O:GS:",loptions,NULL)) >= 0)
     {
         switch (c) {
             case 'b': args.region_beg = atoi(optarg); break;

@@ -185,7 +185,7 @@ public:
         }
         
     // Function to print M3VCF Record as VCF format   
-    void writeVcfRecordGenotypes(IFILE filePtr, m3vcfBlockHeader &ThisHeader);
+    void writeVcfRecordGenotypes(IFILE filePtr, m3vcfBlockHeader &ThisHeader, const std::vector<bool>& sample_mask);
     
     
   

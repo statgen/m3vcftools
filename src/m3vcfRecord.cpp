@@ -6,32 +6,28 @@ void m3vcfRecord::copyStartInfotoBlock(m3vcfBlockHeader &thisBlock)
     thisBlock.setStartBasePosition(BasePositionVal);
 }
 
-void m3vcfRecord::writeVcfRecordGenotypes(IFILE filePtr, m3vcfBlockHeader &ThisHeader)
+void m3vcfRecord::writeVcfRecordGenotypes(IFILE filePtr, m3vcfBlockHeader &ThisHeader, const std::vector<bool>& sample_mask)
 {
-    vector<AlleleType> tempAlleles(numUniqueReps,'0');
+  vector<std::size_t> tempAlleles(numUniqueReps, 0);
 
-    for(int i=0; i<numAltHaplo; i++)
-        tempAlleles[altHaploIndex[i]]='1';
+  for(int i=0; i<numAltHaplo; i++)
+    tempAlleles[altHaploIndex[i]]=1;
 
-    ifprintf(filePtr,"GT");
-    int HapCount = 0;
-    for(int i=0; i<ThisHeader.getNumSamples(); i++)
+  ifprintf(filePtr,"GT");
+  int HapCount = 0;
+  for(int i=0; i<ThisHeader.getNumSamples(); i++)
+  {
+    if (!sample_mask[i])
     {
-        if (tempAlleles[ThisHeader.getUniqueIndexMap(HapCount++)] == '1')
-            filePtr->ifwrite("\t1", 2);
-        else
-            filePtr->ifwrite("\t0", 2);
-        //ifprintf(filePtr, "\t%c",tempAlleles[ThisHeader.getUniqueIndexMap(HapCount++)]);
-        if(ThisHeader.getSamplePloidy(i)==2)
-        {
-            //ifprintf(filePtr, "|%c",tempAlleles[ThisHeader.getUniqueIndexMap(HapCount++)]);
-            if (tempAlleles[ThisHeader.getUniqueIndexMap(HapCount++)] == '1')
-                filePtr->ifwrite("|1", 2);
-            else
-                filePtr->ifwrite("|0", 2);
-        }   
+      HapCount += ThisHeader.getSamplePloidy(i);
+      continue;
     }
-    ifprintf(filePtr, "\n");
+
+    ifwrite(filePtr, tempAlleles[ThisHeader.getUniqueIndexMap(HapCount++)] ? "\t1" : "\t0", 2);
+    if(ThisHeader.getSamplePloidy(i)==2)
+      ifwrite(filePtr, tempAlleles[ThisHeader.getUniqueIndexMap(HapCount++)] ? "|1" : "|0", 2);
+  }
+  ifprintf(filePtr, "\n");
 }
 
 
