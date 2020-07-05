@@ -8,7 +8,7 @@ void m3vcfRecord::copyStartInfotoBlock(m3vcfBlockHeader &thisBlock)
 
 void m3vcfRecord::writeVcfRecordGenotypes(IFILE filePtr, m3vcfBlockHeader &ThisHeader, const std::vector<bool>& sample_mask)
 {
-  vector<std::int8_t> tempAlleles(numUniqueReps, 0);
+  vector<AlleleType> tempAlleles(numUniqueReps, 0);
 
   for(int i=0; i<numAltHaplo; i++)
     tempAlleles[altHaploIndex[i]]=1;
