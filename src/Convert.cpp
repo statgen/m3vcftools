@@ -101,14 +101,22 @@ static void CopyandPrintHeader(convert_args_t &args)
       assert(d);
       assert(col < args.sample_mask.size() + 9);
       if (col < 9 || args.sample_mask[col - 9])
-        header_line.append(s, d + 1);
+      {
+        if (col)
+          header_line += '\t';
+        header_line.append(s, d);
+      }
       s = d + 1;
       ++col;
     }
 
     assert(col < args.sample_mask.size() + 9);
     if (col < 9 || args.sample_mask[col - 9])
+    {
+      if (col)
+        header_line += '\t';
       header_line.append(s, e);
+    }
     //----------------------------------------------------------------//
 
     args.myVcfHeader.addHeaderLine(header_line.c_str());
