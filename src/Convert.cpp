@@ -9,6 +9,7 @@
 #include <math.h>
 #include <iostream>
 #include <limits>
+#include <algorithm>
 #include "VcfFileReader.h"
 #include "VcfFileWriter.h"
 #include "m3vcfHeader.h"
