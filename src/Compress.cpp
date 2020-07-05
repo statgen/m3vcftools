@@ -50,7 +50,7 @@ struct compress_args_t
 
 };
 
-static const char* createCommandLine(compress_args_t &args, const char *optionName)
+static std::string createCommandLine(compress_args_t &args, const char *optionName)
 {
     string str = "##m3vcftools_Command=" + (string)optionName;
     for (int i=1; i<args.argc; i++){str+=" "; str += +args.argv[i];}
@@ -61,7 +61,7 @@ static const char* createCommandLine(compress_args_t &args, const char *optionNa
     time ( &rawtime );
     timeinfo = localtime ( &rawtime );
     str+= asctime (timeinfo)  ;
-    return  str.substr(0,str.size()-1).c_str();
+    return  str.substr(0,str.size()-1);
 }
 
 
@@ -119,7 +119,7 @@ static void AnalyseHeader(compress_args_t &args)
                                    NULL, args.sample_exlcude_list)) error("[ERROR:] Failed to read subset samples file ...\n");
     
     if(args.record_cmd_line==1)
-        args.myVcfHeader.appendMetaLine(createCommandLine(args,"compress"));
+        args.myVcfHeader.appendMetaLine(createCommandLine(args,"compress").c_str());
     args.out_hdr.copyHeader(args.myVcfHeader);
     args.outFile.open(args.output_fname, args.out_hdr, args.output_type==4? InputFile::UNCOMPRESSED : InputFile::GZIP);   
 }

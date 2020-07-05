@@ -58,7 +58,7 @@ static void error(const char *format, ...)
 }
  
 
-static const char* createCommandLine(convert_args_t &args, const char *optionName)
+static std::string createCommandLine(convert_args_t &args, const char *optionName)
 {
     string str = "##m3vcftools_Command=" + (string)optionName;
     for (int i=1; i<args.argc; i++){str+=" "; str += +args.argv[i];}
@@ -69,7 +69,7 @@ static const char* createCommandLine(convert_args_t &args, const char *optionNam
     time ( &rawtime );
     timeinfo = localtime ( &rawtime );
     str+= asctime (timeinfo)  ;
-    return  str.substr(0,str.size()-1).c_str();
+    return  str.substr(0,str.size()-1);
 }
 
 
@@ -84,7 +84,7 @@ static void CopyandPrintHeader(convert_args_t &args)
     }
     
     if(args.record_cmd_line==1)
-        args.myVcfHeader.appendMetaLine(createCommandLine(args,"convert"));
+        args.myVcfHeader.appendMetaLine(createCommandLine(args,"convert").c_str());
 
     //----------------------------------------------------------------//
     // Subset samples.

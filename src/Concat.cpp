@@ -68,7 +68,7 @@ void error(const char *format, ...)
 }
 
 
-static const char* createCommandLine(concat_args_t &args, const char *optionName)
+static std::string createCommandLine(concat_args_t &args, const char *optionName)
 {
     string str = "##m3vcftools_Command=" + (string)optionName;
     for (int i=1; i<args.argc; i++){str+=" "; str += +args.argv[i];}
@@ -79,7 +79,7 @@ static const char* createCommandLine(concat_args_t &args, const char *optionName
     time ( &rawtime );
     timeinfo = localtime ( &rawtime );
     str+= asctime (timeinfo)  ;
-    return  str.substr(0,str.size()-1).c_str();
+    return  str.substr(0,str.size()-1);
 }
 
 
@@ -133,7 +133,7 @@ static void AnalyseHeader(concat_args_t &args)
     
         
     }
-    if (args.record_cmd_line==1) args.out_hdr.appendMetaLine(createCommandLine(args,"concat"));
+    if (args.record_cmd_line==1) args.out_hdr.appendMetaLine(createCommandLine(args,"concat").c_str());
     args.outFile.open(args.output_fname, args.out_hdr, args.output_type==4? InputFile::UNCOMPRESSED : InputFile::GZIP);   
 }
 
