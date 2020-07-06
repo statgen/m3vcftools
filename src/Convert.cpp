@@ -43,7 +43,7 @@ struct convert_args_t
     char **argv;
     const char *output_fname, *fname;
     int argc, output_type, record_cmd_line;
-    char *sample_include_list, *sample_exlcude_list;
+    char *sample_include_list, *sample_exclude_list;
     int region_beg;
     int region_end;
 
@@ -135,20 +135,27 @@ static void InitializeHaplotypeData(convert_args_t &args)
     
     args.out_hdr.read(args.m3vcfFileStream);
 
-    args.sample_mask.resize(args.out_hdr.getNumSamples(), true);
-    if (args.sample_include_list)
+    if (args.sample_include_list || args.sample_exclude_list)
     {
-      std::unordered_set<std::string> include_set;
-      std::ifstream ifs(args.sample_include_list);
-      std::string sample_id;
-      while (std::getline(ifs, sample_id))
-        include_set.insert(sample_id);
-
-      for (std::size_t i = 0; i < args.out_hdr.getNumSamples(); ++i)
+      [&args](bool include)
       {
-        if (include_set.find(args.out_hdr.getSampleName(i)) == include_set.end())
-          args.sample_mask[i] = false;
-      }
+        args.sample_mask.resize(args.out_hdr.getNumSamples(), !include);
+        std::unordered_set<std::string> sample_subset;
+        std::ifstream ifs(include ? args.sample_include_list : args.sample_exclude_list);
+        std::string sample_id;
+        while (std::getline(ifs, sample_id))
+          sample_subset.insert(sample_id);
+
+        for (std::size_t i = 0; i < args.out_hdr.getNumSamples(); ++i)
+        {
+          if (sample_subset.find(args.out_hdr.getSampleName(i)) != sample_subset.end())
+            args.sample_mask[i] = include;
+        }
+      }(args.sample_include_list);
+    }
+    else
+    {
+      args.sample_mask.resize(args.out_hdr.getNumSamples(), true);
     }
 }
            
@@ -201,7 +208,7 @@ static void usage(convert_args_t &args)
     fprintf(stderr, "   -G, --drop-genotypes <file>            Write output to a file [standard output]\n");
     fprintf(stderr, "   -o, --output <file>            Write output to a file [standard output]\n");
     fprintf(stderr, "   -O, --output-type <z|v>        z: compressed VCF, v: uncompressed VCF [z] \n");
-    fprintf(stderr, "   -S, --samples-file             file of samples to include \n"); // (or exclude with \"^\" prefix) \n");
+    fprintf(stderr, "   -S, --samples-file             file of samples to include or exclude with \"^\" prefix) \n");
     fprintf(stderr, "\n");
     exit(1);
 }
@@ -217,7 +224,7 @@ int main_m3vcfconvert(int argc, char *argv[])
     args.output_type = ZIPVCF;
     args.record_cmd_line = 1;
     args.sample_include_list = NULL;
-    args.sample_exlcude_list = NULL;
+    args.sample_exclude_list = NULL;
     args.VariantListOnly=false;
     args.region_beg = 0;
     args.region_end = std::numeric_limits<int>::max();
@@ -268,7 +275,7 @@ int main_m3vcfconvert(int argc, char *argv[])
     {
         if(args.sample_include_list[0]=='^')
         {
-            args.sample_exlcude_list=&args.sample_include_list[1];
+            args.sample_exclude_list=&args.sample_include_list[1];
             args.sample_include_list=NULL;
         }
     }
